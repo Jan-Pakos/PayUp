@@ -20,6 +20,13 @@ public class UserService {
         return userRepository.findByEmail(email);
     }
 
+    public User registerUser(String email, String rawPassword, String name) {
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new EmailAlreadyExistsException(email);
+        }
+        return userRepository.save(User.forLocalAuth(email, passwordEncoder.encode(rawPassword), name));
+    }
+
     public boolean checkPassword(User user, String rawPassword) {
         if (user.getPassword() == null) return false;
         return passwordEncoder.matches(rawPassword, user.getPassword());
