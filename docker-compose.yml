@@ -18,6 +18,22 @@ services:
       timeout: 5s
       retries: 5
 
+  postgres-wallets:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: payup_wallets
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_wallets_data:/var/lib/postgresql/data
+    networks:
+      - payup-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d payup_wallets"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # ── Services ───────────────────────────────────────────────────────────────
 
   userservice:
@@ -39,12 +55,28 @@ services:
     networks:
       - payup-network
 
+  walletservice:
+    build:
+      context: ./walletservice
+    ports:
+      - "8082:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-wallets:5432/payup_wallets
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      postgres-wallets:
+        condition: service_healthy
+    networks:
+      - payup-network
+
 # ── Future services go here ────────────────────────────────────────────────
 #  paymentservice:
 #    build:
 #      context: ./paymentservice
 #    ports:
-#      - "8082:8080"
+#      - "8083:8080"
 #    networks:
 #      - payup-network
 
@@ -54,3 +86,4 @@ networks:
 
 volumes:
   postgres_users_data:
+  postgres_wallets_data:
