@@ -19,45 +19,80 @@ class JwtServiceTest {
     }
 
     @Test
-    void generateToken_producesNonBlankJwt() {
-        String token = jwtService.generateToken(1L, "alice@example.com", "ROLE_USER");
+    void should_produce_non_blank_jwt_token() {
+        // given
+        Long userId = 1L;
+        String email = "alice@example.com";
+        String role = "ROLE_USER";
+
+        // when
+        String token = jwtService.generateToken(userId, email, role);
+
+        // then
         assertThat(token).isNotBlank().contains(".");
     }
 
     @Test
-    void isTokenValid_returnsTrue_forFreshToken() {
+    void should_return_true_for_a_fresh_token() {
+        // given
         String token = jwtService.generateToken(1L, "alice@example.com", "ROLE_USER");
-        assertThat(jwtService.isTokenValid(token)).isTrue();
+
+        // when
+        boolean result = jwtService.isTokenValid(token);
+
+        // then
+        assertThat(result).isTrue();
     }
 
     @Test
-    void isTokenValid_returnsFalse_forExpiredToken() {
+    void should_return_false_for_an_expired_token() {
+        // given
         JwtService shortLived = new JwtService(SECRET, -1000L);
         String expiredToken = shortLived.generateToken(1L, "alice@example.com", "ROLE_USER");
-        assertThat(jwtService.isTokenValid(expiredToken)).isFalse();
+
+        // when
+        boolean result = jwtService.isTokenValid(expiredToken);
+
+        // then
+        assertThat(result).isFalse();
     }
 
     @Test
-    void isTokenValid_returnsFalse_forGarbage() {
-        assertThat(jwtService.isTokenValid("not.a.jwt")).isFalse();
+    void should_return_false_for_a_garbage_string() {
+        // given
+        String garbage = "not.a.jwt";
+
+        // when
+        boolean result = jwtService.isTokenValid(garbage);
+
+        // then
+        assertThat(result).isFalse();
     }
 
     @Test
-    void extractClaims_returnsCorrectSubjectAndCustomClaims() {
+    void should_extract_correct_subject_and_custom_claims() {
+        // given
         String token = jwtService.generateToken(42L, "bob@example.com", "ROLE_ADMIN");
+
+        // when
         Claims claims = jwtService.extractClaims(token);
 
+        // then
         assertThat(claims.getSubject()).isEqualTo("bob@example.com");
         assertThat(claims.get("role", String.class)).isEqualTo("ROLE_ADMIN");
-        // JWT numbers round-trip through JSON as Integer when they fit; coerce safely
         assertThat(((Number) claims.get("userId")).longValue()).isEqualTo(42L);
     }
 
     @Test
-    void tokensSignedWithDifferentSecrets_areNotValidatedByEachOther() {
+    void should_reject_token_signed_with_a_different_secret() {
+        // given
         JwtService otherService = new JwtService("completely-different-secret-value-here-abc", EXPIRATION_MS);
         String foreignToken = otherService.generateToken(1L, "alice@example.com", "ROLE_USER");
 
-        assertThat(jwtService.isTokenValid(foreignToken)).isFalse();
+        // when
+        boolean result = jwtService.isTokenValid(foreignToken);
+
+        // then
+        assertThat(result).isFalse();
     }
 }
