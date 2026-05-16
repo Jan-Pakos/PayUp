@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: walletservice
+  datasource:
+    url: jdbc:postgresql://localhost:5432/payup_wallets
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:changeme-use-a-long-random-256-bit-secret-in-production}

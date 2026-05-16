@@ -1,0 +1,56 @@
+services:
+
+  # ── Databases ──────────────────────────────────────────────────────────────
+
+  postgres-users:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: payup_users
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_users_data:/var/lib/postgresql/data
+    networks:
+      - payup-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d payup_users"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Services ───────────────────────────────────────────────────────────────
+
+  userservice:
+    build:
+      context: ./userservice
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-users:5432/payup_users
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+    depends_on:
+      postgres-users:
+        condition: service_healthy
+    networks:
+      - payup-network
+
+# ── Future services go here ────────────────────────────────────────────────
+#  paymentservice:
+#    build:
+#      context: ./paymentservice
+#    ports:
+#      - "8082:8080"
+#    networks:
+#      - payup-network
+
+networks:
+  payup-network:
+    driver: bridge
+
+volumes:
+  postgres_users_data:
